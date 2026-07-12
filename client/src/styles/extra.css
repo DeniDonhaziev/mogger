@@ -1,0 +1,63 @@
+/* React-специфичные мелочи поверх landing.css */
+#root { min-height: 100dvh; }
+
+/* блок «войдите, чтобы писать в чат» */
+.chat-lock {
+  margin: auto;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 24px;
+}
+.chat-lock .btn { margin-top: 14px; }
+
+.spin { opacity: .6; }
+
+/* полировка чата (та же гамма) */
+.chat-body .msg, .op-conv-body .msg { box-shadow: 0 6px 18px -10px rgba(0, 0, 0, .55); }
+.chat-card .chat-head { background: linear-gradient(180deg, var(--panel-2), var(--panel)); }
+.chat-body { min-height: 340px; background: radial-gradient(120% 80% at 50% 0, rgba(63, 111, 230, .06), transparent 60%), var(--bg-2); }
+.chat-input input:focus, .op-conv .chat-input input:focus { border-color: var(--brand); }
+.msg-time { opacity: .7; }
+
+/* блок «Скачать» с двумя ОС — по центру, на телефоне в один столбец */
+.os-grid.two { grid-template-columns: repeat(2, 1fr); max-width: 520px; }
+@media (max-width: 560px) { .os-grid.two { grid-template-columns: 1fr; max-width: 320px; } }
+
+/* ===== панель оператора (/admin) ===== */
+.op-login { height: 100dvh; display: grid; place-items: center; padding: 20px; }
+.op-login .form-card { width: 100%; max-width: 380px; }
+.op-login .brand { margin-bottom: 20px; }
+
+.op { height: 100dvh; display: grid; grid-template-columns: 320px 1fr; background: var(--bg); color: var(--text); }
+.op-side { border-right: 1px solid var(--border-soft); background: var(--bg-2); display: flex; flex-direction: column; min-width: 0; }
+.op-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border-soft); }
+.op-head b { font-size: 15px; }
+.op-head small { display: block; font-size: 11px; color: var(--muted-2); }
+.op-list { flex: 1; overflow-y: auto; }
+.op-item { display: flex; gap: 11px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--border-soft); cursor: pointer; transition: .12s; }
+.op-item:hover { background: var(--panel-2); }
+.op-item.active { background: var(--panel-3); }
+.op-ava { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--brand), var(--brand-2)); display: grid; place-items: center; font-weight: 700; color: #fff; flex: none; }
+.op-main2 { min-width: 0; flex: 1; }
+.op-top { display: flex; justify-content: space-between; gap: 8px; }
+.op-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.op-time { font-size: 11px; color: var(--muted-2); flex: none; }
+.op-last { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.op-empty { padding: 40px 20px; text-align: center; color: var(--muted-2); font-size: 13px; line-height: 1.5; }
+
+.op-conv { display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+.op-conv-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); background: var(--panel-2); }
+.op-conv-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.op-conv-empty { margin: auto; color: var(--muted-2); font-size: 14px; text-align: center; }
+.op .msg-user { align-self: flex-start; background: var(--panel-3); border: 1px solid var(--border-soft); border-bottom-left-radius: 4px; }
+.op .msg-support { align-self: flex-end; background: linear-gradient(180deg, var(--brand-2), var(--brand)); color: #fff; border-bottom-right-radius: 4px; }
+.logout-btn { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 7px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.logout-btn:hover { border-color: var(--brand); }
+
+@media (max-width: 760px) {
+  .op { grid-template-columns: 1fr; }
+  .op.viewing .op-side { display: none; }
+  .op:not(.viewing) .op-conv { display: none; }
+}
