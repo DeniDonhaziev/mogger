@@ -1,0 +1,18 @@
+# Конфигурация деплоя сервера MOGGER на Render (render.com)
+# Render → New → Blueprint → выбрать репозиторий DeniDonhaziev/mogger → он прочитает этот файл.
+services:
+  - type: web
+    name: mogger-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # вставишь строку Neon вручную в дашборде
+      - key: JWT_SECRET
+        generateValue: true  # Render сгенерирует случайный секрет сам
+      - key: NODE_VERSION
+        value: 20
