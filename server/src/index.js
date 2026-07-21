@@ -13,6 +13,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || '*';
 const PORT = process.env.PORT || 4000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Авто-ответ: отправляется от имени поддержки на первое сообщение пользователя в чате.
+const AUTO_REPLY = 'Спасибо за обращение! 🙌 Техподдержка ответит вам в течение 24 часов.';
 
 const app = express();
 // Разрешаем любой источник: аутентификация по JWT в заголовке (не по кукам), так безопасно.
@@ -163,6 +165,24 @@ io.on('connection', async (socket) => {
       io.to(`chat:${targetChat}`).emit('chat:message', { chatId: targetChat, ...msg });
       io.to('support').emit('chat:updated', { chatId: targetChat });
       if (typeof ack === 'function') ack({ ok: true });
+
+      // Авто-ответ на самое первое сообщение пользователя в чате.
+      if (sender === 'user') {
+        const cnt = await pool.query('SELECT COUNT(*)::int AS n FROM messages WHERE chat_id = $1', [targetChat]);
+        if (cnt.rows[0].n === 1) {
+          const autoIns = await pool.query(
+            'INSERT INTO messages(chat_id, sender, body) VALUES($1, $2, $3) RETURNING id, sender, body, created_at',
+            [targetChat, 'support', AUTO_REPLY]
+          );
+          const autoMsg = autoIns.rows[0];
+          await pool.query(
+            'UPDATE chats SET last_message = $1, updated_at = now() WHERE id = $2',
+            ['Поддержка: ' + AUTO_REPLY, targetChat]
+          );
+          io.to(`chat:${targetChat}`).emit('chat:message', { chatId: targetChat, ...autoMsg });
+          io.to('support').emit('chat:updated', { chatId: targetChat });
+        }
+      }
     } catch (e) {
       console.error(e);
       if (typeof ack === 'function') ack({ ok: false, error: 'Не удалось отправить' });
