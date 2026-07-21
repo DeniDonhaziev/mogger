@@ -20,6 +20,7 @@ async function req(path, body) {
 
 export const register = (username, email, password) => req('/api/register', { username, email, password });
 export const login = (email, password) => req('/api/login', { email, password });
+export const registerAdmin = (username, email, password) => req('/api/admin/register', { username, email, password });
 
 export async function getMessages(chatId) {
   const res = await fetch(`${API_URL}/api/chats/${chatId}/messages`, {
@@ -37,6 +38,47 @@ export async function getChats() {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Ошибка');
   return data.chats;
+}
+
+export async function markChatRead(chatId) {
+  const res = await fetch(`${API_URL}/api/chats/${chatId}/read`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + getToken() },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Ошибка');
+  return data;
+}
+
+export async function getOperators() {
+  const res = await fetch(`${API_URL}/api/admin/operators`, {
+    headers: { Authorization: 'Bearer ' + getToken() },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Ошибка');
+  return data.operators;
+}
+
+export async function createOperator(username, email, password) {
+  const res = await fetch(`${API_URL}/api/admin/operators`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify({ username, email, password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Ошибка');
+  return data.operator;
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  const res = await fetch(`${API_URL}/api/me/password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Ошибка');
+  return data;
 }
 
 // декодируем payload JWT (с корректной раскодировкой UTF-8 — чтобы кириллица не билась)

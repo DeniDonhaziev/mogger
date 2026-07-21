@@ -29,6 +29,10 @@
 .op-login { height: 100dvh; display: grid; place-items: center; padding: 20px; }
 .op-login .form-card { width: 100%; max-width: 380px; }
 .op-login .brand { margin-bottom: 20px; }
+.op-auth-hint { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 16px; }
+.op-auth-switch { margin: 16px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.op-auth-switch a { color: var(--brand); text-decoration: none; font-weight: 600; }
+.op-auth-switch a:hover { text-decoration: underline; }
 
 .op { height: 100dvh; display: grid; grid-template-columns: 320px 1fr; background: var(--bg); color: var(--text); }
 .op-side { border-right: 1px solid var(--border-soft); background: var(--bg-2); display: flex; flex-direction: column; min-width: 0; }
@@ -45,6 +49,18 @@
 .op-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .op-time { font-size: 11px; color: var(--muted-2); flex: none; }
 .op-last { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.op-item.unread .op-name, .op-item.unread .op-last { font-weight: 600; color: var(--text); }
+.op-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; flex: none; }
+.op-head-actions { display: flex; align-items: center; gap: 8px; }
+.op-icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-soft); background: var(--panel-2); color: var(--text); cursor: pointer; font-size: 16px; line-height: 1; }
+.op-icon-btn:hover { background: var(--panel-3); }
+.op-settings { display: flex; flex-direction: column; height: 100%; min-width: 0; }
+.op-settings-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; max-width: 420px; }
+.op-settings-form h4, .op-operators-list h4 { margin: 0 0 12px; font-size: 14px; }
+.op-settings-form .field { margin-bottom: 10px; }
+.op-operator-row { padding: 10px 12px; border: 1px solid var(--border-soft); border-radius: 10px; margin-bottom: 8px; }
+.op-operator-row span { display: block; font-weight: 600; font-size: 14px; }
+.op-operator-row small { color: var(--muted-2); font-size: 12px; }
 .op-empty { padding: 40px 20px; text-align: center; color: var(--muted-2); font-size: 13px; line-height: 1.5; }
 
 .op-conv { display: flex; flex-direction: column; min-width: 0; background: var(--bg); }

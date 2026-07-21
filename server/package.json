@@ -7,6 +7,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "db:init": "node src/initDb.js",
+    "make:admin": "node src/makeSupport.js",
     "make:support": "node src/makeSupport.js",
     "set:password": "node src/setPassword.js"
   },

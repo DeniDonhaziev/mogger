@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   username      TEXT NOT NULL,
   email         TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  role          TEXT NOT NULL DEFAULT 'user',   -- 'user' | 'support'
+  role          TEXT NOT NULL DEFAULT 'user',   -- 'user' | 'support' | 'admin'
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -12,8 +12,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS chats (
   id           SERIAL PRIMARY KEY,
   user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  last_message TEXT,
-  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_message     TEXT,
+  support_read_at  TIMESTAMPTZ,
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id)
 );

@@ -259,7 +259,7 @@ function Download({ showToast }) {
             <div className="os" key={o.name}>
               <div className="os-ico">{o.icon}</div>
               <b>{o.name}</b><small>{o.note}</small>
-              <button className="btn btn-primary btn-block" onClick={() => showToast('Загрузка MOGGER для ' + o.name + '...')}>Скачать</button>
+              <button className="btn btn-primary btn-block" disabled style={{ opacity: 0.65, cursor: 'default' }}>Скоро</button>
             </div>
           ))}
         </div>

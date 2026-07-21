@@ -6,6 +6,7 @@ const sql = fs.readFileSync(new URL('./schema.sql', import.meta.url), 'utf8');
 
 try {
   await pool.query(sql);
+  await pool.query('ALTER TABLE chats ADD COLUMN IF NOT EXISTS support_read_at TIMESTAMPTZ');
   console.log('✅ База инициализирована (таблицы созданы).');
 } catch (e) {
   console.error('❌ Ошибка инициализации базы:', e.message);

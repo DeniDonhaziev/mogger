@@ -6,11 +6,11 @@ import './styles/landing.css';
 import './styles/extra.css';
 import './styles/polish.css';
 
-const path = window.location.pathname.replace(/\/+$/, '');
-const isAdmin = path === '/admin';
+const path = window.location.pathname.replace(/\/+$/, '') || '/';
+const adminPage = path === '/admin/register' ? 'register' : path === '/admin' ? 'login' : null;
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {isAdmin ? <Admin /> : <App />}
+    {adminPage ? <Admin page={adminPage} /> : <App />}
   </React.StrictMode>
 );
