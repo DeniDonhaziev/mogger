@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import { pool } from './db.js';
+import { purgeExpiredChats, scheduleChatPurge } from './purgeExpiredChats.js';
 
 dotenv.config();
 
@@ -13,12 +14,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || '*';
 const PORT = process.env.PORT || 4000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Авто-ответ: отправляется от имени поддержки на первое сообщение пользователя в чате.
-const AUTO_REPLY = 'Спасибо за обращение! 🙌 Техподдержка ответит вам в течение 24 часов.';
+const AUTO_REPLY_TEXT = 'Спасибо за обращение! Техническая поддержка ответит вам в течение 24 часов.';
 
 const isOperator = (role) => role === 'support' || role === 'admin';
 const isAdmin = (role) => role === 'admin';
-const AUTO_REPLY_TEXT = 'Спасибо за обращение! Техническая поддержка ответит вам в течение 24 часов.';
 
 const app = express();
 // Разрешаем любой источник: аутентификация по JWT в заголовке (не по кукам), так безопасно.
@@ -143,6 +142,7 @@ app.post('/api/admin/register', async (req, res) => {
 /* ---------- support: список чатов и история ---------- */
 app.get('/api/chats', authHttp, async (req, res) => {
   if (!isOperator(req.user.role)) return res.status(403).json({ error: 'Только для операторов' });
+  await purgeExpiredChats().catch(() => {});
   const { rows } = await pool.query(
     `SELECT c.id, c.last_message, c.updated_at, u.username, u.email,
             (SELECT COUNT(*)::int FROM messages m
@@ -167,6 +167,7 @@ app.post('/api/chats/:id/read', authHttp, async (req, res) => {
 });
 
 app.get('/api/chats/:id/messages', authHttp, async (req, res) => {
+  await purgeExpiredChats().catch(() => {});
   const chatId = Number(req.params.id);
   const owner = await pool.query('SELECT user_id FROM chats WHERE id = $1', [chatId]);
   if (!owner.rows[0]) return res.status(404).json({ error: 'Чат не найден' });
@@ -260,7 +261,7 @@ io.on('connection', async (socket) => {
   if (asOperator) {
     socket.join('support'); // операторы получают обновления списка
   } else {
-    // любой вошедший (в т.ч. оператор на главной) пишет как обычный пользователь в свой чат
+    await purgeExpiredChats().catch(() => {});
     const chatId = await getUserChatId(u.id);
     socket.data.chatId = chatId;
     socket.join(`chat:${chatId}`);
@@ -293,24 +294,6 @@ io.on('connection', async (socket) => {
       const msg = await sendChatMessage(targetChat, sender, text, io);
       if (sender === 'user') await maybeSendAutoReply(targetChat, msg.id, io);
       if (typeof ack === 'function') ack({ ok: true });
-
-      // Авто-ответ на самое первое сообщение пользователя в чате.
-      if (sender === 'user') {
-        const cnt = await pool.query('SELECT COUNT(*)::int AS n FROM messages WHERE chat_id = $1', [targetChat]);
-        if (cnt.rows[0].n === 1) {
-          const autoIns = await pool.query(
-            'INSERT INTO messages(chat_id, sender, body) VALUES($1, $2, $3) RETURNING id, sender, body, created_at',
-            [targetChat, 'support', AUTO_REPLY]
-          );
-          const autoMsg = autoIns.rows[0];
-          await pool.query(
-            'UPDATE chats SET last_message = $1, updated_at = now() WHERE id = $2',
-            ['Поддержка: ' + AUTO_REPLY, targetChat]
-          );
-          io.to(`chat:${targetChat}`).emit('chat:message', { chatId: targetChat, ...autoMsg });
-          io.to('support').emit('chat:updated', { chatId: targetChat });
-        }
-      }
     } catch (e) {
       console.error(e);
       if (typeof ack === 'function') ack({ ok: false, error: 'Не удалось отправить' });
@@ -318,4 +301,7 @@ io.on('connection', async (socket) => {
   });
 });
 
-server.listen(PORT, () => console.log(`🚀 MOGGER API на http://localhost:${PORT}`));
+server.listen(PORT, () => {
+  console.log(`🚀 MOGGER API на http://localhost:${PORT}`);
+  scheduleChatPurge();
+});

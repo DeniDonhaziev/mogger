@@ -51,6 +51,7 @@ export default function App() {
       <div className="progress" id="progress" />
       <canvas id="stars" />
       <div className="grid-fade" />
+      <div className="noise" aria-hidden="true" />
       <div className="orb o1" /><div className="orb o2" /><div className="orb o3" />
 
       <Header user={user} onLogin={() => setLoginOpen(true)} onLogout={logout} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -129,6 +130,10 @@ function Hero() {
             <li><Check />ИИ ассистент</li>
             <li><Check />Быстрый доступ</li>
           </ul>
+          <div className="hero-cta">
+            <a href="#signup" className="btn btn-primary">Создать аккаунт</a>
+            <a href="#support" className="btn btn-ghost">Написать в поддержку</a>
+          </div>
         </div>
         <div className="reveal d2 kb-wrap">
           <div className="kb">
@@ -222,9 +227,14 @@ function Features() {
   ];
   return (
     <section className="section container" id="features">
+      <div className="sec-head reveal">
+        <span className="eyebrow">Быстрый старт</span>
+        <h2>Всё необходимое — в три шага</h2>
+        <p>Скачайте приложение, создайте аккаунт и получите помощь от команды поддержки.</p>
+      </div>
       <div className="trio">
         {cards.map((c, i) => (
-          <div className={'fcard reveal' + (i ? ' d' + i : '')} key={c.t}>
+          <div className={'fcard reveal' + (i ? ' d' + i : '')} key={c.t} style={{ '--i': i }}>
             <div className="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{c.icon}</svg></div>
             <h4>{c.t}</h4>
             <p>{c.p}</p>
@@ -250,8 +260,10 @@ function Download({ showToast }) {
   ];
   return (
     <section className="section container" id="download">
-      <div className="sec-head reveal"><span className="num">1.</span> <span className="eyebrow">Скачать программу</span>
-        <h2>Скачайте MOGGER</h2><p>Выберите версию для вашей операционной системы.</p>
+      <div className="sec-head reveal">
+        <div className="sec-meta"><span className="num">1.</span><span className="eyebrow">Скачать</span></div>
+        <h2>Скачайте MOGGER</h2>
+        <p>Выберите версию для вашей операционной системы.</p>
       </div>
       <div className="download reveal d1">
         <div className="os-grid two">
@@ -259,7 +271,7 @@ function Download({ showToast }) {
             <div className="os" key={o.name}>
               <div className="os-ico">{o.icon}</div>
               <b>{o.name}</b><small>{o.note}</small>
-              <button className="btn btn-primary btn-block" disabled style={{ opacity: 0.65, cursor: 'default' }}>Скоро</button>
+              <span className="soon-badge">Скоро</span>
             </div>
           ))}
         </div>
@@ -301,8 +313,10 @@ function Signup({ user, onAuthed, showToast, onLoginLink }) {
 
   return (
     <section className="section container" id="signup">
-      <div className="sec-head reveal"><span className="num">2.</span> <span className="eyebrow">Создать аккаунт</span>
-        <h2>Создайте аккаунт</h2><p>Регистрация через email и пароль, безопасное хранение данных.</p>
+      <div className="sec-head reveal">
+        <div className="sec-meta"><span className="num">2.</span><span className="eyebrow">Регистрация</span></div>
+        <h2>Создайте аккаунт</h2>
+        <p>Регистрация через email и пароль, безопасное хранение данных.</p>
       </div>
       <div className="split">
         <div className="reveal">
@@ -323,7 +337,7 @@ function Signup({ user, onAuthed, showToast, onLoginLink }) {
             </div>
           ) : (
             <>
-              <h3>Создать аккаунт</h3>
+              <h3>Данные для регистрации</h3>
               <form onSubmit={submit} noValidate>
                 <div className={'field' + (err.username ? ' err' : '')}>
                   <label>Имя пользователя</label>
@@ -366,8 +380,10 @@ function Signup({ user, onAuthed, showToast, onLoginLink }) {
 function Support({ user, onLogin }) {
   return (
     <section className="section container" id="support">
-      <div className="sec-head reveal"><span className="num">3.</span> <span className="eyebrow">Техническая поддержка</span>
-        <h2>Мы всегда на связи</h2><p>Напишите в чат поддержки — оператор ответит прямо здесь.</p>
+      <div className="sec-head reveal">
+        <div className="sec-meta"><span className="num">3.</span><span className="eyebrow">Поддержка</span></div>
+        <h2>Мы всегда на связи</h2>
+        <p>Напишите в чат поддержки — оператор ответит прямо здесь.</p>
       </div>
       <div className="split">
         <div className="reveal">

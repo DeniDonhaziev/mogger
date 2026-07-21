@@ -1,6 +1,18 @@
 /* React-специфичные мелочи поверх landing.css */
 #root { min-height: 100dvh; }
 
+.soon-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 100%; padding: 11px 16px; border-radius: 12px;
+  font-size: 14px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--brand-2);
+  background: linear-gradient(180deg, rgba(63, 111, 230, .14), rgba(63, 111, 230, .06));
+  border: 1px dashed rgba(107, 148, 255, .35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+.hero-cta .btn { min-width: 168px; }
+
 /* блок «войдите, чтобы писать в чат» */
 .chat-lock {
   margin: auto;
