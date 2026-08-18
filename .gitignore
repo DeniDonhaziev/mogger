@@ -58,10 +58,6 @@ mogger_artifact.html
 .agents/
 skills-lock.json
 
-# случайный корневой package (зависимости лежат в client/ и server/)
-/package.json
-/package-lock.json
-
 # Optional npm cache directory
 .npm
 

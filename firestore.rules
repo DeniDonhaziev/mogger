@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isOperator() { return signedIn() && userRole() in ['admin', 'support']; }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if isSelf(userId);
+      allow update: if isSelf(userId) || isOperator();
+    }
+
+    match /chats/{userId} {
+      allow read: if isSelf(userId) || isOperator();
+      allow write: if isSelf(userId) || isOperator();
+
+      match /messages/{msgId} {
+        allow read: if isSelf(userId) || isOperator();
+        allow create: if isSelf(userId) || isOperator();
+      }
+    }
+  }
+}

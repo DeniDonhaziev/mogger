@@ -4,7 +4,27 @@
     "public": "client/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
+      {
+        "source": "/__/auth/**",
+        "destination": "https://web99-a3eb7.firebaseapp.com/__/auth/**"
+      },
       { "source": "**", "destination": "/index.html" }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "mogger.su",
+      "www.mogger.su",
+      "moggerai.web.app",
+      "web99-a3eb7.web.app",
+      "web99-a3eb7.firebaseapp.com"
+    ],
+    "providers": {
+      "emailPassword": true
+    }
   }
 }

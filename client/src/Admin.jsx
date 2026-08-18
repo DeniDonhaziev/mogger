@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  login, registerAdmin, getToken, setToken, decodeUser, makeSocket,
-  getChats, getMessages, markChatRead, getOperators, createOperator, changePassword,
+  login, registerAdmin, decodeUser, logoutUser,
+  listenChats, listenMessages, sendSupportMessage,
+  markChatRead, getOperators, createOperator, changePassword,
 } from './api.js';
 
 const SendIcon = () => (
@@ -12,12 +13,12 @@ const fmt = (ts) => { try { return new Date(ts).toLocaleString('ru-RU', { day: '
 const isOperator = (role) => role === 'support' || role === 'admin';
 
 export default function Admin({ page = 'login' }) {
-  const [user, setUser] = useState(() => (getToken() ? decodeUser(getToken()) : null));
-  const logout = () => { setToken(null); setUser(null); };
+  const [user, setUser] = useState(() => decodeUser());
+  const logout = async () => { await logoutUser(); setUser(null); };
 
   if (!user) {
-    if (page === 'register') return <OpRegisterPage onAuthed={(t) => { setToken(t); setUser(decodeUser(t)); }} />;
-    return <OpLoginPage onAuthed={(t) => { setToken(t); setUser(decodeUser(t)); }} />;
+    if (page === 'register') return <OpRegisterPage onAuthed={({ user: u }) => setUser(u)} />;
+    return <OpLoginPage onAuthed={({ user: u }) => setUser(u)} />;
   }
   if (!isOperator(user.role)) return <NotOperator user={user} onLogout={logout} />;
   return <OpPanel user={user} onLogout={logout} />;
@@ -60,7 +61,7 @@ function OpLogin({ onAuthed }) {
   const [busy, setBusy] = useState(false);
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErr('');
-    try { const { token } = await login(email.trim(), pass); onAuthed(token); }
+    try { const r = await login(email.trim(), pass); onAuthed(r); }
     catch (e2) { setErr(e2.message || 'Ошибка входа'); }
     finally { setBusy(false); }
   };
@@ -93,8 +94,8 @@ function OpRegister({ onAuthed }) {
     if (f.p1 !== f.p2) { setErr('Пароли не совпадают'); return; }
     setBusy(true);
     try {
-      const { token } = await registerAdmin(f.username.trim(), f.email.trim(), f.p1);
-      onAuthed(token);
+      const r = await registerAdmin(f.username.trim(), f.email.trim(), f.p1);
+      onAuthed(r);
     } catch (e2) { setErr(e2.message || 'Ошибка регистрации'); }
     finally { setBusy(false); }
   };
@@ -219,15 +220,10 @@ function OpPanel({ user, onLogout }) {
   const [viewing, setViewing] = useState(false);
   const [settings, setSettings] = useState(false);
   const [operators, setOperators] = useState([]);
-  const socketRef = useRef();
   const bodyRef = useRef();
-  const currentRef = useRef(null);
+  const msgUnsubRef = useRef(null);
 
   const totalUnread = chats.reduce((n, c) => n + (Number(c.unread_count) || 0), 0);
-
-  const refreshChats = useCallback(async () => {
-    try { setChats(await getChats()); } catch { /* пусто */ }
-  }, []);
 
   const refreshOperators = useCallback(async () => {
     if (user.role !== 'admin') return;
@@ -235,35 +231,40 @@ function OpPanel({ user, onLogout }) {
   }, [user.role]);
 
   useEffect(() => {
-    refreshChats();
     refreshOperators();
-    const socket = makeSocket('operator');
-    socketRef.current = socket;
-    socket.on('chat:message', (m) => {
-      if (m.chatId === currentRef.current) setMessages((p) => [...p, m]);
-    });
-    socket.on('chat:updated', refreshChats);
-    return () => socket.disconnect();
-  }, [refreshChats, refreshOperators]);
+    const unsub = listenChats(setChats);
+    return () => unsub();
+  }, [refreshOperators]);
 
-  useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [messages]);
+  useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+  }, [messages]);
 
   const openChat = async (c) => {
-    setCurrent(c.id); currentRef.current = c.id; setCurInfo(c); setViewing(true); setSettings(false);
-    socketRef.current?.emit('chat:join', { chatId: c.id });
+    setCurrent(c.id);
+    setCurInfo(c);
+    setViewing(true);
+    setSettings(false);
+    msgUnsubRef.current?.();
+    msgUnsubRef.current = listenMessages(c.id, setMessages);
     try {
-      setMessages(await getMessages(c.id));
       await markChatRead(c.id);
       setChats((prev) => prev.map((x) => (x.id === c.id ? { ...x, unread_count: 0 } : x)));
     } catch { setMessages([]); }
   };
 
-  const send = (e) => {
+  useEffect(() => () => msgUnsubRef.current?.(), []);
+
+  const send = async (e) => {
     e.preventDefault();
     const t = text.trim();
     if (!t || !current) return;
-    socketRef.current?.emit('chat:send', { chatId: current, body: t });
     setText('');
+    try {
+      await sendSupportMessage(current, t);
+    } catch {
+      setText(t);
+    }
   };
 
   return (

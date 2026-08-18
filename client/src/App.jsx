@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { register, login, getToken, setToken, decodeUser, makeSocket, getMessages } from './api.js';
+import { register, login, logoutUser, decodeUser, listenMessages, sendUserMessage } from './api.js';
 
 /* ---------- маленькие SVG ---------- */
 const Logo = ({ cls = 'logo' }) => (
@@ -21,7 +21,7 @@ const fmtTime = (ts) => { try { return ts ? new Date(ts).toLocaleTimeString('ru-
 
 /* ============ APP ============ */
 export default function App() {
-  const [user, setUser] = useState(() => (getToken() ? decodeUser(getToken()) : null));
+  const [user, setUser] = useState(() => decodeUser());
   const [toast, setToast] = useState('');
   const [loginOpen, setLoginOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,13 +33,12 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(''), 2800);
   }, []);
 
-  const onAuthed = useCallback((token) => {
-    setToken(token);
-    setUser(decodeUser(token));
+  const onAuthed = useCallback(({ user: u }) => {
+    setUser(u);
   }, []);
 
-  const logout = () => {
-    setToken(null);
+  const logout = async () => {
+    await logoutUser();
     setUser(null);
     showToast('Вы вышли из аккаунта');
   };
@@ -66,7 +65,7 @@ export default function App() {
       {loginOpen && (
         <LoginModal
           onClose={() => setLoginOpen(false)}
-          onAuthed={(t) => { onAuthed(t); setLoginOpen(false); showToast('С возвращением 👋'); }}
+          onAuthed={(r) => { onAuthed(r); setLoginOpen(false); showToast('С возвращением 👋'); }}
         />
       )}
 
@@ -301,13 +300,15 @@ function Signup({ user, onAuthed, showToast, onLoginLink }) {
     if (Object.keys(er).length) return;
     setBusy(true);
     try {
-      const { token } = await register(f.username.trim(), f.email.trim(), f.p1);
-      onAuthed(token);
+      const { user: u } = await register(f.username.trim(), f.email.trim(), f.p1);
+      onAuthed({ user: u });
       setF({ username: '', email: '', p1: '', p2: '' });
       showToast('Аккаунт создан! Добро пожаловать 🎉');
     } catch (e2) {
       const msg = e2.message || 'Ошибка';
-      if (/email/i.test(msg)) setErr({ email: msg }); else showToast(msg);
+      if (/email/i.test(msg)) setErr({ email: msg });
+      else if (/сервер|база|не отвечает/i.test(msg)) setErr({ email: msg });
+      else showToast(msg);
     } finally { setBusy(false); }
   };
 
@@ -365,7 +366,7 @@ function Signup({ user, onAuthed, showToast, onLoginLink }) {
                   </div>
                   <small className="ferr">{err.p2}</small>
                 </div>
-                <button className="btn btn-primary btn-block" type="submit" style={{ marginTop: 6 }} disabled={busy}>{busy ? 'Создаём…' : 'Создать аккаунт'}</button>
+                <button className="btn btn-primary btn-block" type="submit" style={{ marginTop: 6 }} disabled={busy}>{busy ? 'Подключение…' : 'Создать аккаунт'}</button>
                 <div className="form-foot">Уже есть аккаунт? <a href="#" onClick={(e) => { e.preventDefault(); onLoginLink(); }}>Войти</a></div>
               </form>
             </>
@@ -405,44 +406,37 @@ function Support({ user, onLogin }) {
 function ChatBox({ user, onLogin }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
-  const [status, setStatus] = useState('Подключение…');
+  const [online, setOnline] = useState(false);
   const bodyRef = useRef();
-  const socketRef = useRef();
-  const chatIdRef = useRef(null);
 
   useEffect(() => {
-    if (!user) { setStatus('офлайн'); return; }
-    const socket = makeSocket();
-    socketRef.current = socket;
-    socket.on('connect', () => setStatus('на связи'));
-    socket.on('connect_error', () => setStatus('офлайн'));
-    socket.on('chat:ready', async ({ chatId }) => {
-      chatIdRef.current = chatId;
-      try { setMessages(await getMessages(chatId)); } catch { /* пусто */ }
-    });
-    socket.on('chat:message', (m) => setMessages((prev) => [...prev, m]));
-    return () => socket.disconnect();
+    if (!user?.id) { setOnline(false); return; }
+    setOnline(true);
+    const unsub = listenMessages(user.id, setMessages);
+    return () => unsub();
   }, [user]);
 
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
   }, [messages]);
 
-  const send = (e) => {
+  const send = async (e) => {
     e.preventDefault();
     const t = text.trim();
-    if (!t || !socketRef.current) return;
-    socketRef.current.emit('chat:send', { chatId: chatIdRef.current, body: t });
+    if (!t || !user?.id) return;
     setText('');
+    try {
+      await sendUserMessage(user.id, user.username, user.email || '', t);
+    } catch (e2) {
+      setText(t);
+    }
   };
-
-  const online = status === 'на связи';
 
   return (
     <div className="chat-card" style={{ margin: 0, border: 0, flex: 1 }}>
       <div className="chat-head">
         <span className="chat-ava">M</span>
-        <div className="chat-head-info"><b>Чат поддержки MOGGER</b><small className={'chat-status' + (online ? ' online' : '')}>{online ? 'на связи' : status}</small></div>
+        <div className="chat-head-info"><b>Чат поддержки MOGGER</b><small className={'chat-status' + (online ? ' online' : '')}>{online ? 'на связи' : 'офлайн'}</small></div>
       </div>
       <div className="chat-body" ref={bodyRef}>
         {!user ? (
@@ -478,8 +472,8 @@ function LoginModal({ onClose, onAuthed }) {
     e.preventDefault();
     setBusy(true); setErr('');
     try {
-      const { token } = await login(email.trim(), pass);
-      onAuthed(token);
+      const { user: u } = await login(email.trim(), pass);
+      onAuthed({ user: u });
     } catch (e2) { setErr(e2.message || 'Ошибка входа'); }
     finally { setBusy(false); }
   };

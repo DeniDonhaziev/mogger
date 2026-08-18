@@ -239,6 +239,15 @@ app.post('/api/admin/operators', authHttp, async (req, res) => {
   }
 });
 
+app.get('/api/health', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ ok: true });
+  } catch {
+    res.status(503).json({ ok: false, error: 'База данных недоступна' });
+  }
+});
+
 app.get('/', (_req, res) => res.send('MOGGER API работает'));
 
 /* ---------- socket.io realtime ---------- */
