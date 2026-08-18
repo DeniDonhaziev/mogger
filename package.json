@@ -7,7 +7,8 @@
     "dev": "npx -y concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:client": "npm run dev --prefix client",
     "dev:server": "npm run dev --prefix server",
-    "build": "npm run build --prefix client",
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "vercel-build": "npm install --prefix client && npm run build --prefix client",
     "start": "npm run start --prefix server",
     "db:init": "npm run db:init --prefix server",
     "deploy": "npm run build --prefix client && npx -y firebase-tools@latest deploy --only hosting"
