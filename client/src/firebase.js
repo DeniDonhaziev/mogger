@@ -4,7 +4,11 @@ import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCsHTOrdTXeZFiZRYTqBucZuQZUiJ0NF6Q',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || (typeof location !== 'undefined' && /mogger\.su$/i.test(location.hostname) ? 'mogger.su' : 'moggerai.web.app'),
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || (
+    typeof location !== 'undefined' && location.hostname.endsWith('mogger.su')
+      ? 'mogger.su'
+      : 'moggerai.web.app'
+  ),
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'web99-a3eb7',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'web99-a3eb7.firebasestorage.app',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '523711596432',

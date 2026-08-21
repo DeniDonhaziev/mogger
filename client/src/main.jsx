@@ -9,8 +9,17 @@ import './styles/polish.css';
 const path = window.location.pathname.replace(/\/+$/, '') || '/';
 const adminPage = path === '/admin/register' ? 'register' : path === '/admin' ? 'login' : null;
 
-createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    {adminPage ? <Admin page={adminPage} /> : <App />}
-  </React.StrictMode>
-);
+const rootEl = document.getElementById('root');
+if (!rootEl) {
+  document.body.innerHTML = '<p style="font-family:sans-serif;padding:24px">Ошибка: не найден #root</p>';
+} else {
+  try {
+    createRoot(rootEl).render(
+      <React.StrictMode>
+        {adminPage ? <Admin page={adminPage} /> : <App />}
+      </React.StrictMode>
+    );
+  } catch (e) {
+    rootEl.innerHTML = `<p style="font-family:sans-serif;padding:24px;color:#c00">Ошибка загрузки: ${e?.message || e}</p>`;
+  }
+}
