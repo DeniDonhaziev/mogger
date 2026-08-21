@@ -1,37 +1,22 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile,
-} from 'firebase/auth';
-import {
-  collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
-  query, where, orderBy, onSnapshot, serverTimestamp, limit,
-} from 'firebase/firestore';
-import { auth, db } from './firebase.js';
+import { getStoredUser, setStoredUser } from './authStorage.js';
 
-const USER_KEY = 'mogger_user';
-const TOKEN_KEY = 'mogger_token';
 const AUTO_REPLY = 'Спасибо за обращение! Техническая поддержка ответит вам в течение 24 часов.';
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-export const setToken = (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY));
+let fbPromise;
 
-export function getStoredUser() {
-  try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; }
-}
-
-export function setStoredUser(user, token) {
-  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-  else localStorage.removeItem(USER_KEY);
-  setToken(token);
-}
-
-export function decodeUser() {
-  return getStoredUser();
+function loadFb() {
+  if (!fbPromise) {
+    fbPromise = Promise.all([
+      import('./firebase.js'),
+      import('firebase/auth'),
+      import('firebase/firestore'),
+    ]).then(([{ auth, db }, authMod, fsMod]) => ({ auth, db, ...authMod, ...fsMod }));
+  }
+  return fbPromise;
 }
 
 async function profile(uid) {
+  const { db, getDoc, doc } = await loadFb();
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.data() || {};
 }
@@ -69,6 +54,10 @@ function fbErr(e) {
 
 export async function register(username, email, password) {
   try {
+    const {
+      auth, db, createUserWithEmailAndPassword,
+      updateProfile, doc, setDoc, serverTimestamp,
+    } = await loadFb();
     const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
     await updateProfile(cred.user, { displayName: username.trim() });
     await setDoc(doc(db, 'users', cred.user.uid), {
@@ -89,18 +78,24 @@ export async function register(username, email, password) {
 
 export async function login(email, password) {
   try {
-  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-  return packUser(cred.user);
+    const { auth, signInWithEmailAndPassword } = await loadFb();
+    const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+    return packUser(cred.user);
   } catch (e) { fbErr(e); }
 }
 
 export async function logoutUser() {
+  const { auth, signOut } = await loadFb();
   await signOut(auth);
   setStoredUser(null, null);
 }
 
 export async function registerAdmin(username, email, password) {
   try {
+    const {
+      auth, db, createUserWithEmailAndPassword, updateProfile,
+      getDocs, query, collection, where, doc, setDoc, serverTimestamp,
+    } = await loadFb();
     const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
     await updateProfile(cred.user, { displayName: username.trim() });
     const admins = await getDocs(query(collection(db, 'users'), where('role', '==', 'admin')));
@@ -116,11 +111,16 @@ export async function registerAdmin(username, email, password) {
 }
 
 export async function getOperators() {
+  const { db, getDocs, query, collection, where } = await loadFb();
   const snap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['admin', 'support'])));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 export async function createOperator(username, email, password) {
+  const {
+    auth, db, createUserWithEmailAndPassword, updateProfile,
+    doc, setDoc, serverTimestamp,
+  } = await loadFb();
   const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
   await updateProfile(cred.user, { displayName: username.trim() });
   await setDoc(doc(db, 'users', cred.user.uid), {
@@ -133,17 +133,24 @@ export async function createOperator(username, email, password) {
 }
 
 export function listenMessages(userId, cb) {
-  const q = query(collection(db, 'chats', userId, 'messages'), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, (snap) => {
-    cb(snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      created_at: d.data().createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
-    })));
+  let unsub;
+  loadFb().then(({ db, collection, query, orderBy, onSnapshot }) => {
+    const q = query(collection(db, 'chats', userId, 'messages'), orderBy('createdAt', 'asc'));
+    unsub = onSnapshot(q, (snap) => {
+      cb(snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+        created_at: d.data().createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+      })));
+    });
   });
+  return () => { if (unsub) unsub(); };
 }
 
 export async function sendUserMessage(userId, username, email, text) {
+  const {
+    db, doc, collection, addDoc, updateDoc, setDoc, getDocs, query, where, limit, serverTimestamp,
+  } = await loadFb();
   const chatRef = doc(db, 'chats', userId);
   const msgRef = collection(db, 'chats', userId, 'messages');
   await addDoc(msgRef, { sender: 'user', body: text, createdAt: serverTimestamp() });
@@ -160,6 +167,7 @@ export async function sendUserMessage(userId, username, email, text) {
 }
 
 export async function sendSupportMessage(userId, text) {
+  const { db, doc, collection, addDoc, updateDoc, serverTimestamp } = await loadFb();
   const msgRef = collection(db, 'chats', userId, 'messages');
   await addDoc(msgRef, { sender: 'support', body: text, createdAt: serverTimestamp() });
   await updateDoc(doc(db, 'chats', userId), {
@@ -169,48 +177,44 @@ export async function sendSupportMessage(userId, text) {
 }
 
 export function listenChats(cb) {
-  const q = query(collection(db, 'chats'), orderBy('updatedAt', 'desc'));
-  return onSnapshot(q, async (snap) => {
-    const chats = [];
-    for (const d of snap.docs) {
-      const data = d.data();
-      const userMsgs = await getDocs(query(collection(db, 'chats', d.id, 'messages'), where('sender', '==', 'user'), limit(1)));
-      if (userMsgs.empty) continue;
-      const allUser = await getDocs(query(collection(db, 'chats', d.id, 'messages'), where('sender', '==', 'user')));
-      const readAt = data.supportReadAt?.toDate?.() || new Date(0);
-      let unreadCount = 0;
-      allUser.forEach((m) => {
-        const t = m.data().createdAt?.toDate?.() || new Date(0);
-        if (t > readAt) unreadCount++;
-      });
-      chats.push({
-        id: d.id,
-        username: data.username,
-        email: data.email,
-        last_message: data.lastMessage,
-        updated_at: data.updatedAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
-        unread_count: unreadCount,
-      });
-    }
-    cb(chats);
+  let unsub;
+  loadFb().then(({ db, collection, query, orderBy, onSnapshot, getDocs, where, limit }) => {
+    const q = query(collection(db, 'chats'), orderBy('updatedAt', 'desc'));
+    unsub = onSnapshot(q, async (snap) => {
+      const chats = [];
+      for (const d of snap.docs) {
+        const data = d.data();
+        const userMsgs = await getDocs(query(collection(db, 'chats', d.id, 'messages'), where('sender', '==', 'user'), limit(1)));
+        if (userMsgs.empty) continue;
+        const allUser = await getDocs(query(collection(db, 'chats', d.id, 'messages'), where('sender', '==', 'user')));
+        const readAt = data.supportReadAt?.toDate?.() || new Date(0);
+        let unreadCount = 0;
+        allUser.forEach((m) => {
+          const t = m.data().createdAt?.toDate?.() || new Date(0);
+          if (t > readAt) unreadCount++;
+        });
+        chats.push({
+          id: d.id,
+          username: data.username,
+          email: data.email,
+          last_message: data.lastMessage,
+          updated_at: data.updatedAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+          unread_count: unreadCount,
+        });
+      }
+      cb(chats);
+    });
   });
+  return () => { if (unsub) unsub(); };
 }
 
 export async function markChatRead(userId) {
+  const { db, doc, updateDoc, serverTimestamp } = await loadFb();
   await updateDoc(doc(db, 'chats', userId), { supportReadAt: serverTimestamp() });
 }
 
-export async function getMessages(userId) {
-  const snap = await getDocs(query(collection(db, 'chats', userId, 'messages'), orderBy('createdAt', 'asc')));
-  return snap.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-    created_at: d.data().createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
-  }));
-}
-
 export async function changePassword(_current, newPassword) {
-  const { updatePassword } = await import('firebase/auth');
+  const { auth, updatePassword } = await loadFb();
   const user = auth.currentUser;
   if (!user) throw new Error('Требуется вход');
   await updatePassword(user, newPassword);

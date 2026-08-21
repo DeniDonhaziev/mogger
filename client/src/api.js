@@ -1,6 +1,7 @@
+export { getToken, setToken, decodeUser } from './authStorage.js';
 export {
-  getToken, setToken, decodeUser, register, login, registerAdmin,
+  register, login, registerAdmin, logoutUser,
   markChatRead, getOperators, createOperator,
   changePassword, wakeApi, listenMessages, sendUserMessage, sendSupportMessage,
-  listenChats, logoutUser,
+  listenChats,
 } from './authService.js';

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { register, login, logoutUser, decodeUser, listenMessages, sendUserMessage } from './api.js';
+import { register, login, logoutUser, listenMessages, sendUserMessage } from './api.js';
+import { decodeUser } from './authStorage.js';
 
 /* ---------- маленькие SVG ---------- */
 const Logo = ({ cls = 'logo' }) => (

@@ -23,6 +23,14 @@
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    setTimeout(function () {
+      var r = document.getElementById('root');
+      if (r && !r.childNodes.length) {
+        r.innerHTML = '<p style="padding:42vh 20px 0;text-align:center;color:#8fa3cc;font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.6">Не удалось загрузить сайт.<br><a href="" style="color:#5b86ff">Обновите страницу</a> или попробуйте VPN.</p>';
+      }
+    }, 45000);
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
