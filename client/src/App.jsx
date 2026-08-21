@@ -46,6 +46,11 @@ export default function App() {
 
   useBackgroundFx();
 
+  useEffect(() => {
+    const id = window.setTimeout(() => { import('./authService.js').catch(() => {}); }, 300);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
     <>
       <div className="progress" id="progress" />

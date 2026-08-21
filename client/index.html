@@ -4,32 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MOGGER — вся информация в одном месте</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 3 42 13v22L24 45 6 35V13L24 3Z' stroke='%235b86ff' stroke-width='2' fill='rgba(63,111,230,.12)'/%3E%3Cpath d='M15 32V17l9 7 9-7v15' stroke='%235b86ff' stroke-width='2.5' stroke-linejoin='round' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
   <style>
-    body { background: #070a12; margin: 0; }
-    #root:empty::before {
-      content: 'Загрузка MOGGER…';
-      display: block;
-      padding: 42vh 20px 0;
-      text-align: center;
-      color: #8fa3cc;
-      font-family: Inter, system-ui, sans-serif;
-      font-size: 15px;
-    }
+    body { background: #070a12; margin: 0; color: #eef2fc; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+    .boot { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+    .boot-logo { width: 56px; height: 56px; margin-bottom: 20px; opacity: .9; }
+    .boot h1 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin: 0 0 10px; letter-spacing: -.02em; }
+    .boot p { color: #9aa3bb; margin: 0; font-size: 15px; }
+    .boot-bar { width: min(220px, 70vw); height: 4px; background: #1c2640; border-radius: 99px; margin-top: 22px; overflow: hidden; }
+    .boot-bar i { display: block; height: 100%; width: 35%; background: linear-gradient(90deg, #3f6fe6, #6b94ff); border-radius: 99px; animation: bootslide 1.2s ease-in-out infinite; }
+    @keyframes bootslide { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="boot" aria-hidden="true">
+      <svg class="boot-logo" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <path d="M24 3 42 13v22L24 45 6 35V13L24 3Z" stroke="#5b86ff" stroke-width="2" fill="rgba(63,111,230,.12)" />
+        <path d="M15 32V17l9 7 9-7v15" stroke="#5b86ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none" />
+      </svg>
+      <h1>MOGGER</h1>
+      <p>Загрузка интерфейса…</p>
+      <div class="boot-bar"><i></i></div>
+    </div>
+  </div>
   <script>
     setTimeout(function () {
       var r = document.getElementById('root');
-      if (r && !r.childNodes.length) {
-        r.innerHTML = '<p style="padding:42vh 20px 0;text-align:center;color:#8fa3cc;font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.6">Не удалось загрузить сайт.<br><a href="" style="color:#5b86ff">Обновите страницу</a> или попробуйте VPN.</p>';
+      if (r && r.querySelector('.boot')) {
+        r.innerHTML = '<div class="boot"><h1>MOGGER</h1><p>Не удалось загрузить сайт.<br><a href="" style="color:#6b94ff">Обновите страницу</a> или попробуйте VPN.</p></div>';
       }
-    }, 45000);
+    }, 25000);
   </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>

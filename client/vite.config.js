@@ -5,11 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: { port: 5173 },
   build: {
+    cssCodeSplit: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('firebase')) return 'firebase';
-          if (id.includes('node_modules/react')) return 'react';
+          if (id.includes('firebase') || id.includes('@firebase')) return 'firebase';
         },
       },
     },
