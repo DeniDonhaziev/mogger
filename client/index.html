@@ -28,13 +28,15 @@
       <div class="boot-bar"><i></i></div>
     </div>
   </div>
+  <link rel="preconnect" href="https://firebasestorage.googleapis.com">
+  <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
   <script>
     setTimeout(function () {
       var r = document.getElementById('root');
       if (r && r.querySelector('.boot')) {
-        r.innerHTML = '<div class="boot"><h1>MOGGER</h1><p>Не удалось загрузить сайт.<br><a href="" style="color:#6b94ff">Обновите страницу</a> или попробуйте VPN.</p></div>';
+        r.innerHTML = '<div class="boot"><h1>MOGGER</h1><p>Не удалось загрузить сайт.<br><a href="" style="color:#6b94ff">Обновите страницу</a>.</p></div>';
       }
-    }, 25000);
+    }, 15000);
   </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
