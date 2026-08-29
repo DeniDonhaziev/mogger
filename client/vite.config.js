@@ -11,20 +11,17 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    cssCodeSplit: true,
+    cssCodeSplit: false,
     sourcemap: false,
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('firebase') || id.includes('@firebase')) return 'firebase';
-          if (id.includes('node_modules')) return 'vendor';
-        },
+        manualChunks: undefined,
+        inlineDynamicImports: true,
         assetFileNames: 'assets/[name]-[hash][extname]',
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
       },
     },
-    chunkSizeWarningLimit: 1000,
   },
 });
